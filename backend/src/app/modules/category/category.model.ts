@@ -13,6 +13,7 @@ const categorySchema = new Schema<ICategory>(
       unique: true,
       required: true,
     },
+
     isActive: {
       type: Boolean,
       default: true,

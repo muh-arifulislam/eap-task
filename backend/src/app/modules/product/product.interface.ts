@@ -13,3 +13,13 @@ export interface IProduct {
 
   isActive: boolean;
 }
+
+export interface CreateProduct {
+  name: string;
+  image: string;
+  rating: string;
+  category: Types.ObjectId;
+  price: number;
+  stock: number;
+  minStock: number;
+}
