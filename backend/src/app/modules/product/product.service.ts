@@ -4,6 +4,8 @@ import AppError from "../../errors/AppError";
 import httpStatus from "http-status";
 import { Product } from "./product.model";
 import { Category } from "../category/category.model";
+import { RestockQueue } from "../restock/restock.model";
+import { startSession } from "mongoose";
 
 const createProduct = async (payload: CreateProduct) => {
   const slug = slugify(payload.name, { lower: true, strict: true });
@@ -47,6 +49,72 @@ const updateProduct = async (id: string, payload: CreateProduct) => {
   return product;
 };
 
+const updateProductStock = async (productId: string, quantity: number) => {
+  const session = await startSession();
+
+  try {
+    session.startTransaction();
+
+    const product = await Product.findById(productId).session(session);
+
+    if (!product) {
+      throw new AppError(httpStatus.NOT_FOUND, "Product not found");
+    }
+
+    // Update stock
+    product.stock += quantity;
+    await product.save({ session });
+
+    /** -------------------------
+     * RESTOCK QUEUE SYNC
+     * ------------------------- */
+
+    const existingQueue = await RestockQueue.findOne({
+      product: product._id,
+    }).session(session);
+
+    if (product.stock <= product.minStock) {
+      let priority: "HIGH" | "MEDIUM" | "LOW" = "LOW";
+
+      const ratio = product.stock / product.minStock;
+
+      if (ratio <= 0.3) priority = "HIGH";
+      else if (ratio <= 0.7) priority = "MEDIUM";
+
+      if (!existingQueue) {
+        await RestockQueue.create(
+          [
+            {
+              product: product._id,
+              priority,
+            },
+          ],
+          { session },
+        );
+      } else {
+        existingQueue.priority = priority;
+        await existingQueue.save({ session });
+      }
+    } else {
+      // stock is healthy → remove from queue
+      if (existingQueue) {
+        await RestockQueue.deleteOne({ _id: existingQueue._id }).session(
+          session,
+        );
+      }
+    }
+
+    await session.commitTransaction();
+    await session.endSession();
+
+    return product;
+  } catch (error) {
+    await session.abortTransaction();
+    await session.endSession();
+    throw error;
+  }
+};
+
 const deleteProduct = async (id: string) => {
   const product = await Product.findByIdAndDelete(id);
   if (!product) throw new Error("Product doesn't exists");
@@ -70,6 +138,7 @@ const getProducts = async () => {
 export const ProductServices = {
   createProduct,
   updateProduct,
+  updateProductStock,
   deleteProduct,
   getProduct,
   getProducts,

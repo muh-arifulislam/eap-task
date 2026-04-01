@@ -30,6 +30,23 @@ const updateProduct = catchAsync(async (req, res) => {
   });
 });
 
+const updateProductInventory = catchAsync(async (req, res) => {
+  const { quantity } = req.body;
+  const { productId } = req.params;
+
+  const data = await ProductServices.updateProductStock(
+    productId as string,
+    quantity,
+  );
+
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: "Product inventory is updated successfully",
+    data: data,
+  });
+});
+
 const deleteProduct = catchAsync(async (req, res) => {
   const { productId } = req.params;
 
@@ -70,4 +87,5 @@ export const ProductControllers = {
   deleteProduct,
   getProduct,
   getAllProducts,
+  updateProductInventory,
 };
