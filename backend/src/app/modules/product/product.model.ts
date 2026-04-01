@@ -9,7 +9,7 @@ const productSchema = new Schema<IProduct>(
     },
     image: {
       type: String,
-      required: true,
+      default: "",
     },
     slug: {
       type: String,
