@@ -25,43 +25,49 @@ const updateProduct = catchAsync(async (req, res) => {
   sendResponse(res, {
     success: true,
     statusCode: httpStatus.OK,
-    message: "Category is updated successfully",
+    message: "Product is updated successfully",
     data: data,
   });
 });
 
 const deleteProduct = catchAsync(async (req, res) => {
-  const { categoryId } = req.params;
+  const { productId } = req.params;
 
-  const data = await ProductServices.deleteProduct(categoryId as string);
+  const data = await ProductServices.deleteProduct(productId as string);
   sendResponse(res, {
     success: true,
     statusCode: httpStatus.OK,
-    message: "Category is deleted successfully",
+    message: "Product is deleted successfully",
     data: data,
   });
 });
 
 const getProduct = catchAsync(async (req, res) => {
-  const { categoryId } = req.params;
+  const { productId } = req.params;
 
-  const data = await ProductServices.getCategoryById(categoryId as string);
+  const data = await ProductServices.getProduct(productId as string);
   sendResponse(res, {
     success: true,
     statusCode: httpStatus.OK,
-    message: "Category data is fetched successfully",
+    message: "Product data is fetched successfully",
     data: data,
   });
 });
 
 const getAllProducts = catchAsync(async (req, res) => {
-  const data = await ProductServices.getAllCategories();
+  const data = await ProductServices.getProducts();
   sendResponse(res, {
     success: true,
     statusCode: httpStatus.OK,
-    message: "Categories data is fetched successfully",
+    message: "Products data are fetched successfully",
     data: data,
   });
 });
 
-export const ProductControllers = { createProduct };
+export const ProductControllers = {
+  createProduct,
+  updateProduct,
+  deleteProduct,
+  getProduct,
+  getAllProducts,
+};
