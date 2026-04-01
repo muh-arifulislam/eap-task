@@ -1,104 +1,349 @@
+import { startSession } from "mongoose";
 import { Product } from "../product/product.model";
-import { IOrderItem } from "./order.interface";
+import { IOrder, IOrderItem } from "./order.interface";
 import { Order } from "./order.model";
+import AppError from "../../errors/AppError";
+import httpStatus from "http-status";
+import { RestockQueue } from "../restock/restock.model";
 
 const createOrder = async (orderData: any) => {
-  const { customer, items } = orderData;
+  const session = await startSession();
 
-  if (!items || items.length === 0) throw new Error("No items provided");
+  try {
+    session.startTransaction();
 
-  const seen = new Set<string>();
-  let totalPrice = 0;
+    const { customer, items } = orderData;
 
-  for (const item of items as IOrderItem[]) {
-    const prodId = item.product.toString();
+    if (!items || items.length === 0) {
+      throw new AppError(httpStatus.BAD_REQUEST, "No items provided");
+    }
 
-    // Prevent duplicate products
-    if (seen.has(prodId)) throw new Error("Product already added to order");
-    seen.add(prodId);
+    const seen = new Set<string>();
+    let totalPrice = 0;
 
-    const product = await Product.findById(prodId);
-    if (!product) throw new Error("Product not found");
+    await Promise.all(
+      items.map(async (item: IOrderItem) => {
+        const prodId = item.product.toString();
 
-    if (!product.isActive)
-      throw new Error(`Product "${product.name}" is currently unavailable`);
+        if (seen.has(prodId)) {
+          throw new AppError(
+            httpStatus.BAD_REQUEST,
+            "Product already added to order",
+          );
+        }
 
-    // Stock check
-    if (product.stock < item.quantity)
-      throw new Error(
-        `Only ${product.stock} units of "${product.name}" available`,
-      );
+        seen.add(prodId);
 
-    // Deduct stock
-    product.stock -= item.quantity;
-    if (product.stock === 0) product.status = "OUT_OF_STOCK";
+        const product = await Product.findById(prodId).session(session);
 
-    await product.save();
+        if (!product) {
+          throw new AppError(httpStatus.NOT_FOUND, "Product not found");
+        }
 
-    totalPrice += product.price * item.quantity;
+        if (!product.isActive) {
+          throw new AppError(
+            httpStatus.BAD_REQUEST,
+            `Product "${product.name}" is currently unavailable`,
+          );
+        }
+
+        if (product.stock < item.quantity) {
+          throw new AppError(
+            httpStatus.BAD_REQUEST,
+            `Only ${product.stock} units of "${product.name}" available`,
+          );
+        }
+
+        // Deduct stock
+        product.stock -= item.quantity;
+
+        if (product.stock === 0) {
+          product.status = "OUT_OF_STOCK";
+        }
+
+        // Restock alert
+        if (product.stock <= product.minStock) {
+          let priority: "HIGH" | "MEDIUM" | "LOW" = "LOW";
+
+          const ratio = product.stock / product.minStock;
+
+          if (ratio <= 0.3) priority = "HIGH";
+          else if (ratio <= 0.7) priority = "MEDIUM";
+
+          const existingQueue = await RestockQueue.findOne({
+            product: product._id,
+          }).session(session);
+
+          const priorityRank = {
+            LOW: 1,
+            MEDIUM: 2,
+            HIGH: 3,
+          };
+
+          if (!existingQueue) {
+            await RestockQueue.create(
+              [
+                {
+                  product: product._id,
+                  priority,
+                },
+              ],
+              { session },
+            );
+          } else {
+            // update only if new priority is higher
+            if (priorityRank[priority] > priorityRank[existingQueue.priority]) {
+              existingQueue.priority = priority;
+              await existingQueue.save({ session });
+            }
+          }
+        }
+
+        await product.save({ session });
+
+        totalPrice += product.price * item.quantity;
+      }),
+    );
+
+    const order = await Order.create(
+      [
+        {
+          customer,
+          items,
+          totalPrice,
+          status: "PENDING",
+        },
+      ],
+      { session },
+    );
+
+    await session.commitTransaction();
+    await session.endSession();
+
+    return order[0];
+  } catch (err: any) {
+    await session.abortTransaction();
+    await session.endSession();
+
+    throw new AppError(
+      httpStatus.FAILED_DEPENDENCY,
+      err?.message ?? "Something went wrong...!",
+    );
   }
+};
 
-  const order = await Order.create({
-    customer,
-    items,
-    totalPrice,
-    status: "PENDING",
-  });
+const updateOrderStatus = async (orderId: string, status: IOrder["status"]) => {
+  const session = await startSession();
 
+  try {
+    session.startTransaction();
+
+    const order = await Order.findById(orderId).session(session);
+    if (!order) {
+      throw new AppError(httpStatus.NOT_FOUND, "Order not found");
+    }
+
+    // If cancelling order → restore stock
+    if (
+      status === "CANCELLED" &&
+      ["PENDING", "CONFIRMED"].includes(order.status)
+    ) {
+      await Promise.all(
+        order.items.map(async (item: IOrderItem) => {
+          const product = await Product.findById(item.product).session(session);
+          if (!product) return;
+
+          product.stock += item.quantity;
+
+          if (product.stock > 0) {
+            product.status = "IN_STOCK";
+          }
+
+          const existingQueue = await RestockQueue.findOne({
+            product: product._id,
+          }).session(session);
+
+          // Check if product stock is now above minStock → remove restock queue
+          if (product.stock > product.minStock) {
+            if (existingQueue) {
+              await existingQueue.deleteOne({ session });
+            }
+          }
+          // Restock Queue Update
+          else {
+            let priority: "HIGH" | "MEDIUM" | "LOW" = "LOW";
+
+            const ratio = product.stock / product.minStock;
+
+            if (ratio <= 0.3) priority = "HIGH";
+            else if (ratio <= 0.7) priority = "MEDIUM";
+
+            const existingQueue = await RestockQueue.findOne({
+              product: product._id,
+            }).session(session);
+
+            const priorityRank = {
+              LOW: 1,
+              MEDIUM: 2,
+              HIGH: 3,
+            };
+
+            if (!existingQueue) {
+              await RestockQueue.create(
+                [
+                  {
+                    product: product._id,
+                    priority,
+                  },
+                ],
+                { session },
+              );
+            } else {
+              if (
+                priorityRank[priority] !== priorityRank[existingQueue.priority]
+              ) {
+                existingQueue.priority = priority;
+                await existingQueue.save({ session });
+              }
+            }
+          }
+
+          await product.save({ session });
+        }),
+      );
+    }
+
+    order.status = status;
+    await order.save({ session });
+
+    await session.commitTransaction();
+    await session.endSession();
+
+    return order;
+  } catch (err: any) {
+    await session.abortTransaction();
+    await session.endSession();
+
+    throw new AppError(
+      httpStatus.FAILED_DEPENDENCY,
+      err?.message ?? "Something went wrong...!",
+    );
+  }
+};
+
+const deleteOrder = async (orderId: string) => {
+  const session = await startSession();
+
+  try {
+    session.startTransaction();
+
+    const order = await Order.findById(orderId).session(session);
+
+    if (!order) {
+      throw new AppError(httpStatus.NOT_FOUND, "Order not found");
+    }
+
+    // Restore stock if order was pending or confirmed
+    if (["PENDING", "CONFIRMED"].includes(order.status)) {
+      await Promise.all(
+        order.items.map(async (item: IOrderItem) => {
+          const product = await Product.findById(item.product).session(session);
+
+          if (!product) return;
+
+          product.stock += item.quantity;
+
+          if (product.stock > 0) {
+            product.status = "IN_STOCK";
+          }
+
+          const existingQueue = await RestockQueue.findOne({
+            product: product._id,
+          }).session(session);
+
+          // Check if product stock is now above minStock → remove restock queue
+          if (product.stock > product.minStock) {
+            if (existingQueue) {
+              await existingQueue.deleteOne({ session });
+            }
+          } else {
+            let priority: "HIGH" | "MEDIUM" | "LOW" = "LOW";
+
+            const ratio = product.stock / product.minStock;
+
+            if (ratio <= 0.3) priority = "HIGH";
+            else if (ratio <= 0.7) priority = "MEDIUM";
+
+            const existingQueue = await RestockQueue.findOne({
+              product: product._id,
+            }).session(session);
+
+            const priorityRank = {
+              LOW: 1,
+              MEDIUM: 2,
+              HIGH: 3,
+            };
+
+            if (!existingQueue) {
+              await RestockQueue.create(
+                [
+                  {
+                    product: product._id,
+                    priority,
+                  },
+                ],
+                { session },
+              );
+            } else {
+              // update only if new priority is changed
+              if (
+                priorityRank[priority] !== priorityRank[existingQueue.priority]
+              ) {
+                existingQueue.priority = priority;
+                await existingQueue.save({ session });
+              }
+            }
+          }
+
+          await product.save({ session });
+        }),
+      );
+    }
+
+    await Order.findByIdAndDelete(orderId).session(session);
+
+    await session.commitTransaction();
+    await session.endSession();
+
+    return { message: "Order deleted successfully" };
+  } catch (err: any) {
+    await session.abortTransaction();
+    await session.endSession();
+
+    throw new AppError(
+      httpStatus.FAILED_DEPENDENCY,
+      err?.message ?? "Something went wrong...!",
+    );
+  }
+};
+
+const getOrderById = async (orderId: string) => {
+  const order = await Order.findById(orderId).populate("items.product");
+  if (!order) throw new Error("Order not found");
   return order;
 };
 
-// const updateOrderStatus = async (orderId: string, status: IOrder["status"]) => {
-//   const order = await Order.findById(orderId);
-//   if (!order) throw new Error("Order not found");
-
-//   order.status = status;
-//   await order.save();
-
-//   return order;
-// };
-
-// const deleteOrder = async (orderId: string) => {
-//   const order = await Order.findById(orderId);
-//   if (!order) throw new Error("Order not found");
-
-//   // Restore stock if order was confirmed or pending
-//   if (["PENDING", "CONFIRMED"].includes(order.status)) {
-//     for (const item of order.items) {
-//       const product = await Product.findById(item.product);
-//       if (product) {
-//         product.stock += item.quantity;
-//         if (product.stock > 0) product.status = "ACTIVE";
-//         await product.save();
-//       }
-//     }
-//   }
-
-//   await Order.findByIdAndDelete(orderId);
-
-//   return { message: "Order deleted successfully" };
-// };
-
-// const getOrderById = async (orderId: string) => {
-//   const order = await Order.findById(orderId).populate("items.product");
-//   if (!order) throw new Error("Order not found");
-//   return order;
-// };
-
-// const getAllOrders = async () => {
-//   const orders = await Order.find()
-//     .sort({ createdAt: -1 })
-//     .populate("items.product");
-//   return orders;
-// };
-
-// const getOrdersByMobile = async (mobile: string) => {
-//   const orders = await Order.find({ "customer.mobile": mobile })
-//     .sort({ createdAt: -1 })
-//     .populate("items.product");
-//   return orders;
-// };
+const getAllOrders = async () => {
+  const orders = await Order.find()
+    .sort({ createdAt: -1 })
+    .populate("items.product");
+  return orders;
+};
 
 export const OrderServices = {
   createOrder,
+  updateOrderStatus,
+  deleteOrder,
+  getOrderById,
+  getAllOrders,
 };
