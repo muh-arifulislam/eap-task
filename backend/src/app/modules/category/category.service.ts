@@ -32,24 +32,35 @@ const createCategory = async (payload: ICategory) => {
 };
 
 const updateCategory = async (id: string, data: Partial<ICategory>) => {
+  // Find category by ID
   const category = await Category.findById(id);
-  if (!category) throw new AppError(httpStatus.NOT_FOUND, "Category not found");
+  if (!category) {
+    throw new AppError(httpStatus.NOT_FOUND, "Category not found");
+  }
 
-  if (data?.name) {
+  // Update name & slug if provided
+  if (data.name && data.name !== category.name) {
     const slug = slugify(data.name, { lower: true, strict: true });
-    // Check if slug already exists
-    const existing = await Category.findOne({ slug });
-    if (existing)
-      throw new AppError(httpStatus.BAD_REQUEST, "Category already exists");
+
+    // Check if slug already exists for a different category
+    const existing = await Category.findOne({ slug, _id: { $ne: id } });
+    if (existing) {
+      throw new AppError(
+        httpStatus.BAD_REQUEST,
+        "Category name already exists",
+      );
+    }
 
     category.name = data.name;
     category.slug = slug;
   }
 
-  if (data.isActive === true || data.isActive === false) {
+  // Update isActive if provided
+  if (typeof data.isActive === "boolean") {
     category.isActive = data.isActive;
   }
 
+  // Save and return updated category
   await category.save();
   return category;
 };
