@@ -83,6 +83,24 @@ export function AppSidebar() {
         group: "Content Management",
         items: [
           {
+            titleKey: "orders",
+            title: "Orders",
+            icon: FileText,
+            url: "/dashboard/orders",
+            subItems: [
+              {
+                titleKey: "all_orders",
+                title: "All Orders",
+                url: "/dashboard/orders",
+              },
+              {
+                titleKey: "create_order",
+                title: "Create Order",
+                url: "/dashboard/orders/create",
+              },
+            ],
+          },
+          {
             titleKey: "categories",
             title: "Categories",
             icon: FileText,
@@ -114,7 +132,44 @@ export function AppSidebar() {
               {
                 titleKey: "create_product",
                 title: "Create Product",
-                url: "/dashboard/product/create",
+                url: "/dashboard/products/create",
+              },
+            ],
+          },
+          {
+            titleKey: "restock_queue",
+            title: "Restock Queue",
+            icon: FileText,
+            url: "/dashboard/restock-queue",
+            subItems: [
+              {
+                titleKey: "restock_queue",
+                title: "Restock Queue",
+                url: "/dashboard/restock-queue",
+              },
+            ],
+          },
+        ],
+      },
+      {
+        groupKey: "user_management",
+        group: "User Management",
+        items: [
+          {
+            titleKey: "users",
+            title: "Users",
+            icon: FileText,
+            url: "/dashboard/users",
+            subItems: [
+              {
+                titleKey: "all_users",
+                title: "All Users",
+                url: "/dashboard/users",
+              },
+              {
+                titleKey: "create_user",
+                title: "Create User",
+                url: "/dashboard/users/create",
               },
             ],
           },
@@ -152,7 +207,7 @@ export function AppSidebar() {
             </SidebarGroupLabel>
             <SidebarMenu>
               {group.items.map((item) => {
-                const hasSubs = item?.subItems?.length > 0;
+                const hasSubs = !!item?.subItems?.length;
                 const isActive = pathname.startsWith(item.url);
 
                 if (hasSubs) {

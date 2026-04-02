@@ -1,5 +1,6 @@
 import { Toaster } from "sonner";
 import "./globals.css";
+import ReactQueryProvider from "@/providers/ReactQueryProvider";
 
 export default function RootLayout({
   children,
@@ -9,7 +10,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        {children}
+        <ReactQueryProvider>{children}</ReactQueryProvider>
         <Toaster position="top-right" />
       </body>
     </html>

@@ -1,11 +1,11 @@
 // components/ui/Loading.tsx
-import { cn } from "@/lib/utils" // ← optional: if you have a cn utility for classNames (from shadcn/ui or similar)
+import { cn } from "@/lib/utils"; // ← optional: if you have a cn utility for classNames (from shadcn/ui or similar)
 
 interface LoadingProps {
-  size?: "sm" | "md" | "lg"
-  text?: string
-  fullScreen?: boolean
-  className?: string
+  size?: "sm" | "md" | "lg";
+  text?: string;
+  fullScreen?: boolean;
+  className?: string;
 }
 
 /**
@@ -21,7 +21,7 @@ export function LoadingSpinner({
     sm: "h-8 w-8 border-2",
     md: "h-12 w-12 border-4",
     lg: "h-16 w-16 border-4",
-  }[size]
+  }[size];
 
   if (fullScreen) {
     return (
@@ -31,13 +31,13 @@ export function LoadingSpinner({
             className={cn(
               "animate-spin rounded-full border-t-black border-gray-200",
               sizeClasses,
-              className
+              className,
             )}
           />
           {text && <p className="text-gray-600 font-medium">{text}</p>}
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -45,10 +45,10 @@ export function LoadingSpinner({
       <div
         className={cn(
           "animate-spin rounded-full border-t-black border-gray-200",
-          sizeClasses
+          sizeClasses,
         )}
       />
       {text && <p className="text-gray-600 text-sm">{text}</p>}
     </div>
-  )
+  );
 }
