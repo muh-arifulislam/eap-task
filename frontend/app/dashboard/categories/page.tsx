@@ -37,7 +37,7 @@ export default function CategoriesPage() {
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 5;
+  const itemsPerPage = 10;
 
   // Delete modal state
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -99,7 +99,7 @@ export default function CategoriesPage() {
               </tr>
             </thead>
             <tbody>
-              {currentItems.map((cat) => (
+              {currentItems?.map((cat) => (
                 <tr key={cat._id} className="border-b hover:bg-slate-50">
                   <td className="p-3">{cat.name}</td>
                   <td className="p-3">{cat.slug}</td>

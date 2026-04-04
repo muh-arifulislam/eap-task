@@ -238,7 +238,7 @@ export default function OrdersPage() {
             </thead>
 
             <tbody>
-              {orders.length &&
+              {orders.length === 0 &&
                 orders.map((order) => (
                   <tr key={order._id} className="border-b">
                     <td className="p-3">#{order.orderId}</td>
@@ -298,7 +298,7 @@ export default function OrdersPage() {
                     </td>
                   </tr>
                 ))}
-              {orders.length === 0 && (
+              {orders?.length === 0 && (
                 <tr>
                   <td colSpan={8} className="p-3 text-center text-slate-500">
                     No orders found

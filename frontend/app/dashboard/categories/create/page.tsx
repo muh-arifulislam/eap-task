@@ -23,8 +23,8 @@ export default function CreateCategoryPage() {
     setLoading(true);
 
     try {
-      await createCategoryMutation.mutateAsync({ name });
-      toast.success("Category deleted successfully");
+      const res = await createCategoryMutation.mutateAsync({ name });
+      toast.success(res?.message ?? "Category created successfully");
     } catch (err: any) {
       toast.error(err?.message);
     } finally {

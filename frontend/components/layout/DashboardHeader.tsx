@@ -132,7 +132,7 @@ export function DashboardHeader() {
           </DropdownMenuTrigger>
 
           <DropdownMenuContent className="w-56" align="end">
-            <DropdownMenuItem onClick={() => router.push("/dashboard/users")}>
+            <DropdownMenuItem>
               <User className="mr-2 h-4 w-4" />
               Profile
             </DropdownMenuItem>
