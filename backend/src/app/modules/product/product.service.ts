@@ -1,5 +1,9 @@
 import slugify from "slugify";
-import { CreateProduct, IProduct } from "./product.interface";
+import {
+  CreateProduct,
+  IGetProductsQuery,
+  IProduct,
+} from "./product.interface";
 import AppError from "../../errors/AppError";
 import httpStatus from "http-status";
 import { Product } from "./product.model";
@@ -137,14 +141,6 @@ const getProduct = async (id: string) => {
 
   return product;
 };
-
-interface IGetProductsQuery {
-  page?: number;
-  limit?: number;
-  id?: string;
-  status: string;
-  isActive: string;
-}
 
 const getProducts = async (query: IGetProductsQuery) => {
   const page = Number(query.page) || 1;

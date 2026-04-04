@@ -23,3 +23,11 @@ export interface CreateProduct {
   stock: number;
   minStock: number;
 }
+
+export interface IGetProductsQuery {
+  page?: number;
+  limit?: number;
+  id?: string;
+  status: string;
+  isActive: string;
+}

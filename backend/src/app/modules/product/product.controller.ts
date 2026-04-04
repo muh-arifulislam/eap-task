@@ -1,7 +1,9 @@
 import catchAsync from "../../utils/catchAsync";
 import sendResponse from "../../utils/sendResponse";
+import { IGetProductsQuery } from "./product.interface";
 import { ProductServices } from "./product.service";
 import httpStatus from "http-status";
+import { parseQueryParams } from "./product.utils";
 
 const createProduct = catchAsync(async (req, res) => {
   const productData = req.body;
@@ -72,7 +74,9 @@ const getProduct = catchAsync(async (req, res) => {
 });
 
 const getAllProducts = catchAsync(async (req, res) => {
-  const { data, meta } = await ProductServices.getProducts(req.query);
+  const { data, meta } = await ProductServices.getProducts(
+    parseQueryParams(req.query),
+  );
   sendResponse(res, {
     success: true,
     statusCode: httpStatus.OK,
