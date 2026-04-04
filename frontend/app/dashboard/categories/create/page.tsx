@@ -35,9 +35,12 @@ export default function CreateCategoryPage() {
 
   return (
     <div className="max-w-xl space-y-6">
-      <h1 className="text-2xl font-bold">Create Category</h1>
+      <h1 className="text-2xl font-medium">Create Category</h1>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form
+        onSubmit={handleSubmit}
+        className="space-y-4 bg-white p-6 rounded-lg shadow-xs border"
+      >
         <div>
           <label className="text-sm">Name</label>
           <Input

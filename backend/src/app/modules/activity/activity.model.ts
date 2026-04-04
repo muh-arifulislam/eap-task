@@ -7,6 +7,10 @@ const activitySchema = new Schema<IActivity>(
       type: String,
       required: true,
     },
+    user: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+    },
   },
   {
     timestamps: true,

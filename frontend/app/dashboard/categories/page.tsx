@@ -5,9 +5,10 @@ import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import Cookies from "js-cookie";
 import { useRouter } from "next/navigation";
-import { Edit, Trash2, X } from "lucide-react";
+import { Edit, RefreshCcw, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCategories, useDeleteCategory } from "@/hooks/useCategory";
+import LoadingSkeleton from "@/components/LoadingSkeleton";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL!;
 
@@ -24,7 +25,13 @@ interface Category {
 export default function CategoriesPage() {
   const router = useRouter();
 
-  const { data: categories = [], isLoading, error } = useCategories();
+  const {
+    data: categories = [],
+    isLoading,
+    error,
+    refetch,
+    isFetching,
+  } = useCategories();
 
   const deleteCategoryMutation = useDeleteCategory();
 
@@ -64,13 +71,23 @@ export default function CategoriesPage() {
   );
 
   return (
-    <div className="p-6 bg-slate-50 min-h-screen">
-      <h2 className="text-2xl font-bold mb-6">All Categories</h2>
+    <div className="min-h-screen">
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-2xl font-medium">All Categories</h2>
+        <Button
+          onClick={() => refetch()}
+          disabled={isFetching || isLoading}
+          className="flex gap-2"
+        >
+          <RefreshCcw size={16} className={isFetching ? "animate-spin" : ""} />
+          Refresh
+        </Button>
+      </div>
 
-      {isLoading ? (
-        <p>Loading...</p>
+      {isLoading || isFetching ? (
+        <LoadingSkeleton />
       ) : (
-        <div className="overflow-x-auto bg-white rounded-2xl shadow-lg p-4 border border-slate-200">
+        <div className="overflow-x-auto bg-white rounded-2xl shadow-xs p-4 border border-slate-200">
           <table className="w-full table-auto border-collapse text-sm">
             <thead>
               <tr className="bg-slate-100">
@@ -95,15 +112,15 @@ export default function CategoriesPage() {
                       onClick={() =>
                         router.push(`/dashboard/categories/edit/${cat._id}`)
                       }
-                      className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded flex items-center gap-1"
+                      className="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded flex items-center gap-1"
                     >
-                      <Edit size={16} /> Edit
+                      <Edit size={16} />
                     </button>
                     <button
                       onClick={() => confirmDelete(cat._id)}
-                      className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded flex items-center gap-1"
+                      className="bg-red-500 hover:bg-red-600 text-white p-2 rounded flex items-center gap-1"
                     >
-                      <Trash2 size={16} /> Delete
+                      <Trash2 size={16} />
                     </button>
                   </td>
                 </tr>

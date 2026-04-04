@@ -16,3 +16,22 @@ export interface Order {
   status: string;
   createdAt: string;
 }
+
+export interface CreateOrderItem {
+  product: string;
+  quantity: number;
+}
+export interface CreateOrderPayload {
+  customer: {
+    name: string;
+    mobile: string;
+    address: string;
+    email?: string;
+  };
+  items: CreateOrderItem[];
+  totalPrice: number;
+}
+
+export interface UpdateOrderStatusPayload {
+  status: string;
+}

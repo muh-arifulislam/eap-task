@@ -1,20 +1,11 @@
 "use client";
 
+import Cookies from "js-cookie";
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  LayoutDashboard,
-  Users,
-  Layers,
-  Tag,
-  FileText,
-  MessageSquare,
-  BookOpen,
-  Settings,
-  ChevronRight,
-  LucideIcon,
-} from "lucide-react";
+
+import { ChevronRight, LucideIcon } from "lucide-react";
 
 import {
   Sidebar,
@@ -36,27 +27,8 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-
-// --- TypeScript Interfaces ---
-interface SubItem {
-  titleKey: string;
-  title: string;
-  url: string;
-}
-
-interface NavItem {
-  titleKey: string;
-  title: string;
-  icon: LucideIcon;
-  url: string;
-  subItems?: SubItem[];
-}
-
-interface NavGroup {
-  groupKey: string;
-  group: string;
-  items: NavItem[];
-}
+import { filterNavByRole } from "@/utils/navigation";
+import { navConfig } from "@/config/navigation";
 
 export function AppSidebar() {
   const pathname = usePathname();
@@ -64,119 +36,11 @@ export function AppSidebar() {
 
   React.useEffect(() => setMounted(true), []);
 
-  const navItems: NavGroup[] = React.useMemo(
-    () => [
-      {
-        groupKey: "general",
-        group: "General",
-        items: [
-          {
-            titleKey: "dashboard",
-            title: "Dashboard",
-            icon: LayoutDashboard,
-            url: "/dashboard",
-          },
-        ],
-      },
-      {
-        groupKey: "content_management",
-        group: "Content Management",
-        items: [
-          {
-            titleKey: "orders",
-            title: "Orders",
-            icon: FileText,
-            url: "/dashboard/orders",
-            subItems: [
-              {
-                titleKey: "all_orders",
-                title: "All Orders",
-                url: "/dashboard/orders",
-              },
-              {
-                titleKey: "create_order",
-                title: "Create Order",
-                url: "/dashboard/orders/create",
-              },
-            ],
-          },
-          {
-            titleKey: "categories",
-            title: "Categories",
-            icon: FileText,
-            url: "/dashboard/posts",
-            subItems: [
-              {
-                titleKey: "all_categories",
-                title: "All Categories",
-                url: "/dashboard/categories",
-              },
-              {
-                titleKey: "create_category",
-                title: "Create Category",
-                url: "/dashboard/categories/create",
-              },
-            ],
-          },
-          {
-            titleKey: "products",
-            title: "Products",
-            icon: FileText,
-            url: "/dashboard/products",
-            subItems: [
-              {
-                titleKey: "all_products",
-                title: "All Products",
-                url: "/dashboard/products",
-              },
-              {
-                titleKey: "create_product",
-                title: "Create Product",
-                url: "/dashboard/products/create",
-              },
-            ],
-          },
-          {
-            titleKey: "restock_queue",
-            title: "Restock Queue",
-            icon: FileText,
-            url: "/dashboard/restock-queue",
-            subItems: [
-              {
-                titleKey: "restock_queue",
-                title: "Restock Queue",
-                url: "/dashboard/restock-queue",
-              },
-            ],
-          },
-        ],
-      },
-      {
-        groupKey: "user_management",
-        group: "User Management",
-        items: [
-          {
-            titleKey: "users",
-            title: "Users",
-            icon: FileText,
-            url: "/dashboard/users",
-            subItems: [
-              {
-                titleKey: "all_users",
-                title: "All Users",
-                url: "/dashboard/users",
-              },
-              {
-                titleKey: "create_user",
-                title: "Create User",
-                url: "/dashboard/users/create",
-              },
-            ],
-          },
-        ],
-      },
-    ],
-    [],
+  const role = Cookies.get("role");
+
+  const navItems = React.useMemo(
+    () => filterNavByRole(navConfig, role as string),
+    [role],
   );
 
   if (!mounted) return null;
@@ -200,70 +64,80 @@ export function AppSidebar() {
       </SidebarHeader>
 
       <SidebarContent>
-        {navItems.map((group) => (
-          <SidebarGroup key={group.groupKey}>
-            <SidebarGroupLabel className="px-4 text-xs font-semibold uppercase tracking-wider text-gray-500">
-              {group.group}
-            </SidebarGroupLabel>
-            <SidebarMenu>
-              {group.items.map((item) => {
-                const hasSubs = !!item?.subItems?.length;
-                const isActive = pathname.startsWith(item.url);
+        {navItems
+          .filter((group) => {
+            if (group.groupKey === "user_management" && role !== "admin") {
+              return false;
+            }
+            return true;
+          })
+          .map((group) => (
+            <SidebarGroup key={group.groupKey}>
+              <SidebarGroupLabel className="px-4 text-xs font-semibold uppercase tracking-wider text-gray-500">
+                {group.group}
+              </SidebarGroupLabel>
+              <SidebarMenu>
+                {group.items.map((item) => {
+                  const hasSubs = !!item?.subItems?.length;
+                  const isActive = pathname.startsWith(item.url);
 
-                if (hasSubs) {
+                  if (hasSubs) {
+                    return (
+                      <Collapsible
+                        key={item.titleKey}
+                        asChild
+                        defaultOpen={isActive}
+                        className="group/collapsible"
+                      >
+                        <SidebarMenuItem>
+                          <CollapsibleTrigger asChild>
+                            <SidebarMenuButton
+                              className="data-[active=true]:text-PrimaryColor data-[active=true]:font-semibold"
+                              isActive={isActive}
+                            >
+                              {item.icon && <item.icon className="size-4" />}
+                              <span>{item.title}</span>
+                              <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                            </SidebarMenuButton>
+                          </CollapsibleTrigger>
+                          <CollapsibleContent>
+                            <SidebarMenuSub>
+                              {item.subItems!.map((sub) => (
+                                <SidebarMenuSubItem key={sub.titleKey}>
+                                  <SidebarMenuSubButton
+                                    asChild
+                                    isActive={pathname === sub.url}
+                                  >
+                                    <Link href={sub.url}>
+                                      <span>{sub.title}</span>
+                                    </Link>
+                                  </SidebarMenuSubButton>
+                                </SidebarMenuSubItem>
+                              ))}
+                            </SidebarMenuSub>
+                          </CollapsibleContent>
+                        </SidebarMenuItem>
+                      </Collapsible>
+                    );
+                  }
+
                   return (
-                    <Collapsible
-                      key={item.titleKey}
-                      asChild
-                      defaultOpen={isActive}
-                      className="group/collapsible"
-                    >
-                      <SidebarMenuItem>
-                        <CollapsibleTrigger asChild>
-                          <SidebarMenuButton
-                            className="data-[active=true]:text-PrimaryColor data-[active=true]:font-semibold"
-                            isActive={isActive}
-                          >
-                            {item.icon && <item.icon className="size-4" />}
-                            <span>{item.title}</span>
-                            <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
-                          </SidebarMenuButton>
-                        </CollapsibleTrigger>
-                        <CollapsibleContent>
-                          <SidebarMenuSub>
-                            {item.subItems!.map((sub) => (
-                              <SidebarMenuSubItem key={sub.titleKey}>
-                                <SidebarMenuSubButton
-                                  asChild
-                                  isActive={pathname === sub.url}
-                                >
-                                  <Link href={sub.url}>
-                                    <span>{sub.title}</span>
-                                  </Link>
-                                </SidebarMenuSubButton>
-                              </SidebarMenuSubItem>
-                            ))}
-                          </SidebarMenuSub>
-                        </CollapsibleContent>
-                      </SidebarMenuItem>
-                    </Collapsible>
+                    <SidebarMenuItem key={item.titleKey}>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={pathname === item.url}
+                      >
+                        <Link href={item.url}>
+                          {item.icon && <item.icon className="size-4" />}
+                          <span>{item.title}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
                   );
-                }
-
-                return (
-                  <SidebarMenuItem key={item.titleKey}>
-                    <SidebarMenuButton asChild isActive={pathname === item.url}>
-                      <Link href={item.url}>
-                        {item.icon && <item.icon className="size-4" />}
-                        <span>{item.title}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
-              })}
-            </SidebarMenu>
-          </SidebarGroup>
-        ))}
+                })}
+              </SidebarMenu>
+            </SidebarGroup>
+          ))}
       </SidebarContent>
 
       <SidebarRail />

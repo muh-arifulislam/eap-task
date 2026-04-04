@@ -5,6 +5,8 @@ import { ProductValidation } from "./product.validation";
 
 const router = Router();
 
+router.get("/search", ProductControllers.getSearchProducts);
+
 router.patch(
   "/inventory/:productId",
   ProductControllers.updateProductInventory,

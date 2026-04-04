@@ -12,3 +12,23 @@ export interface Product {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface CreateProductPayload {
+  name: string;
+  image?: string;
+  rating: string;
+  price: number;
+  stock: number;
+  minStock: number;
+  category: string;
+}
+
+export interface UpdateProductPayload {
+  name: string;
+  image?: string;
+  rating: string;
+  price: number;
+  stock: number;
+  minStock: number;
+  category: string;
+}

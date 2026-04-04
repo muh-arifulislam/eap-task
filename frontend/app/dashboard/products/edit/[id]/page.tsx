@@ -150,13 +150,13 @@ export default function EditProductPage() {
   };
 
   return (
-    <div className="p-6 bg-slate-50 min-h-screen">
-      <h2 className="text-2xl font-bold mb-6">Edit Product</h2>
+    <div className="min-h-screen">
+      <h2 className="text-2xl font-medium mb-6">Edit Product</h2>
       {loading && <p>Loading...</p>}
       {!loading && (
         <form
           onSubmit={handleSubmit(onSubmit)}
-          className="space-y-5 bg-white p-6 rounded-xl shadow-lg border border-slate-200 max-w-2xl"
+          className="space-y-5 bg-white p-6 rounded-xl shadow-xs border border-slate-200 max-w-2xl"
         >
           {/* Name */}
           <div className="space-y-1">

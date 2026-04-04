@@ -4,8 +4,7 @@ type Meta = {
   total: number;
   page: number;
   limit: number;
-  skip: number;
-  hasMore?: boolean;
+  totalPage: number;
 };
 
 type TResponse<T> = {

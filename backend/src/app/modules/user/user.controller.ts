@@ -48,9 +48,20 @@ const deleteUser = catchAsync(async (req, res) => {
   });
 });
 
+const getAllUsers = catchAsync(async (req, res) => {
+  const data = await UserServices.getAllUsers();
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: "Users data are fetched successfully",
+    data: data,
+  });
+});
+
 export const UserControllers = {
   addUser,
   getUser,
   updateUser,
   deleteUser,
+  getAllUsers,
 };

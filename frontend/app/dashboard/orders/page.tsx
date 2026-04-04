@@ -20,7 +20,12 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Trash2 } from "lucide-react";
+import { RefreshCcw, Trash2 } from "lucide-react";
+import {
+  useDeleteOrder,
+  useOrders,
+  useUpdateOrderStatus,
+} from "@/hooks/userOrder";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL!;
 
@@ -55,7 +60,19 @@ const statusTransitions: Record<string, string[]> = {
 };
 
 export default function OrdersPage() {
-  const [orders, setOrders] = useState<Order[]>([]);
+  const [queryParams, setQueryParams] = useState("");
+
+  const {
+    data: orders = [],
+    isLoading,
+    error,
+    refetch,
+    isFetching,
+  } = useOrders(queryParams);
+
+  const updateOrderStatusMutation = useUpdateOrderStatus();
+  const deleteOrderMutation = useDeleteOrder();
+
   const [loading, setLoading] = useState(false);
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -68,89 +85,27 @@ export default function OrdersPage() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
 
-  const fetchOrders = async () => {
-    setLoading(true);
-
-    try {
-      const token = Cookies.get("access_token");
-
-      const query: string[] = [];
-
-      if (filterStatus) query.push(`status=${filterStatus}`);
-      if (startDate) query.push(`startDate=${startDate}`);
-      if (endDate) query.push(`endDate=${endDate}`);
-
-      const queryString = query.length ? `?${query.join("&")}` : "";
-
-      const res = await fetch(`${BASE_URL}/orders${queryString}`, {
-        headers: {
-          Authorization: `${token}`,
-        },
-      });
-
-      const result = await res.json();
-
-      if (!res.ok) throw new Error(result.message);
-
-      setOrders(result.data || []);
-    } catch (error: any) {
-      toast.error(error.message || "Failed to fetch orders");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    fetchOrders();
+    refetch();
   }, [filterStatus, startDate, endDate]);
 
   const handleDelete = async (id: string) => {
+    const toastId = toast.loading("Order is deleting...");
     try {
-      const token = Cookies.get("access_token");
-
-      const res = await fetch(`${BASE_URL}/orders/${id}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `${token}`,
-        },
-      });
-
-      const result = await res.json();
-
-      if (!res.ok) throw new Error(result.message);
-
-      toast.success("Order deleted");
-
-      setOrders(orders.filter((o) => o._id !== id));
-
-      setModalOpen(false);
+      await deleteOrderMutation.mutateAsync(id);
+      toast.success("Order has been deleted successfully.", { id: toastId });
     } catch (error: any) {
-      toast.error(error.message);
+      toast.error(error.message, { id: toastId });
     }
   };
 
   const handleStatusChange = async (id: string, status: string) => {
+    const toastId = toast.loading("Order status is updating...");
     try {
-      const token = Cookies.get("access_token");
-
-      const res = await fetch(`${BASE_URL}/orders/${id}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `${token}`,
-        },
-        body: JSON.stringify({ status }),
-      });
-
-      const result = await res.json();
-
-      if (!res.ok) throw new Error(result.message);
-
-      toast.success("Status updated");
-
-      setOrders(orders.map((o) => (o._id === id ? { ...o, status } : o)));
+      await updateOrderStatusMutation.mutateAsync({ id, data: { status } });
+      toast.success("Order status updated successfully.", { id: toastId });
     } catch (error: any) {
-      toast.error(error.message);
+      toast.error(error.message, { id: toastId });
     }
   };
 
@@ -162,12 +117,22 @@ export default function OrdersPage() {
   );
 
   return (
-    <div className="p-6 bg-slate-50 min-h-screen">
-      <h2 className="text-2xl font-bold mb-6">All Orders</h2>
+    <div className="min-h-screen">
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-2xl font-medium">All Orders</h2>
+        <Button
+          onClick={() => refetch()}
+          disabled={isLoading || isFetching}
+          className="flex gap-2"
+        >
+          <RefreshCcw size={16} className={isFetching ? "animate-spin" : ""} />{" "}
+          Refresh
+        </Button>
+      </div>
 
       {/* Filters */}
 
-      <div className="flex gap-4 mb-6 flex-wrap items-end">
+      <div className="flex gap-4 mb-6 flex-wrap items-end bg-white p-6 rounded-lg shadow-xs border">
         <div className="flex flex-col">
           <label className="text-sm mb-1">Status</label>
 
@@ -211,13 +176,15 @@ export default function OrdersPage() {
           />
         </div>
 
-        <Button onClick={fetchOrders}>Filter</Button>
+        <Button onClick={() => refetch()} disabled={isLoading || isFetching}>
+          Filter
+        </Button>
       </div>
 
-      {loading ? (
+      {loading || isFetching ? (
         <p>Loading orders...</p>
       ) : (
-        <div className="bg-white rounded-xl border shadow-sm overflow-x-auto">
+        <div className="bg-white rounded-xl border shadow-xs p-4 overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-slate-100">
@@ -342,7 +309,12 @@ export default function OrdersPage() {
 
             <Button
               variant="destructive"
-              onClick={() => deleteId && handleDelete(deleteId)}
+              onClick={() => {
+                if (deleteId) {
+                  handleDelete(deleteId);
+                  setModalOpen(false);
+                }
+              }}
             >
               Delete
             </Button>

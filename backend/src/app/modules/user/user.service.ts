@@ -195,9 +195,16 @@ const deleteUserFromDB = async (id: string) => {
   }
 };
 
+const getAllUsers = async () => {
+  const res = await User.find().populate("address");
+
+  return res;
+};
+
 export const UserServices = {
   addUserIntoDB,
   getUserFromDB,
   updateUserIntoDB,
   deleteUserFromDB,
+  getAllUsers,
 };

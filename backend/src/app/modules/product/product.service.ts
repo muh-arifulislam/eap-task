@@ -6,6 +6,8 @@ import { Product } from "./product.model";
 import { Category } from "../category/category.model";
 import { RestockQueue } from "../restock/restock.model";
 import { startSession } from "mongoose";
+import { buildQueryFilter } from "../../utils/buildQueryFilter";
+import { Activity } from "../activity/activity.model";
 
 const createProduct = async (payload: CreateProduct) => {
   const slug = slugify(payload.name, { lower: true, strict: true });
@@ -104,6 +106,13 @@ const updateProductStock = async (productId: string, quantity: number) => {
       }
     }
 
+    await Activity.create(
+      [{ message: `Stock updated for “${product.name}”` }],
+      {
+        session,
+      },
+    );
+
     await session.commitTransaction();
     await session.endSession();
 
@@ -129,8 +138,69 @@ const getProduct = async (id: string) => {
   return product;
 };
 
-const getProducts = async () => {
-  const products = await Product.find();
+interface IGetProductsQuery {
+  page?: number;
+  limit?: number;
+  id?: string;
+  status: string;
+  isActive: string;
+}
+
+const getProducts = async (query: IGetProductsQuery) => {
+  const page = Number(query.page) || 1;
+  const limit = Number(query.limit) || 10;
+  const skip = (page - 1) * limit;
+
+  let filter: any = {};
+
+  // filter by stock status
+  if (query.status) {
+    filter.status = query.status;
+  }
+
+  // filter by active status
+  if (query.isActive) {
+    if (query.isActive === "1") {
+      filter.isActive = true;
+    }
+    if (query.isActive === "0") {
+      filter.isActive = false;
+    }
+  }
+
+  // filter by id
+  if (query.id) {
+    filter = {};
+    filter._id = query.id;
+  }
+
+  const products = await Product.find(filter)
+    .skip(skip)
+    .limit(limit)
+    .sort({ createdAt: -1 });
+
+  const total = await Product.countDocuments(filter);
+
+  return {
+    meta: {
+      page,
+      limit,
+      total,
+      totalPage: Math.ceil(total / limit),
+    },
+    data: products,
+  };
+};
+
+const getSearchProducts = async (query: Record<string, unknown>) => {
+  const searchableFields = ["name"];
+
+  const filter = buildQueryFilter(query, searchableFields);
+
+  const products = await Product.find(filter)
+    .select("_id name")
+    .limit(10)
+    .sort({ name: 1 });
 
   return products;
 };
@@ -142,4 +212,5 @@ export const ProductServices = {
   deleteProduct,
   getProduct,
   getProducts,
+  getSearchProducts,
 };

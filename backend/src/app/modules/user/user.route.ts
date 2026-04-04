@@ -17,12 +17,14 @@ router.put(
   UserControllers.updateUser,
 );
 
-router.post("/", validateAuth(USER_ROLE.admin), UserControllers.addUser);
-
 router.delete(
   "/:id",
   validateAuth(USER_ROLE.admin),
   UserControllers.deleteUser,
 );
+
+router.post("/", validateAuth(USER_ROLE.admin), UserControllers.addUser);
+
+router.get("/", validateAuth(USER_ROLE.admin), UserControllers.getAllUsers);
 
 export const UserRoutes = router;

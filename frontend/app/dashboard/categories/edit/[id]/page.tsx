@@ -86,7 +86,7 @@ export default function EditCategoryPage() {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          Authorization: `${token}`,
         },
         body: JSON.stringify(data),
       });
@@ -103,15 +103,15 @@ export default function EditCategoryPage() {
   };
 
   return (
-    <div className="p-6 bg-slate-50 min-h-screen">
-      <h2 className="text-2xl font-bold mb-6">Edit Category</h2>
+    <div className="bg-slate-50 min-h-screen">
+      <h2 className="text-2xl font-medium mb-6">Edit Category</h2>
 
       {loading ? (
         <p>Loading...</p>
       ) : (
         <form
           onSubmit={handleSubmit(onSubmit)}
-          className="bg-white p-6 rounded-2xl shadow-lg border border-slate-200 max-w-md space-y-4"
+          className="bg-white p-6 rounded-2xl shadow-xs border border-slate-200 max-w-xl space-y-4"
         >
           {/* Name */}
           <div className="space-y-1">
@@ -122,7 +122,7 @@ export default function EditCategoryPage() {
               {...register("name")}
               type="text"
               placeholder="Category name"
-              className="w-full px-4 py-2 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-PrimaryColor focus:border-PrimaryColor"
+              className="w-full px-4 py-2 rounded-xl border border-slate-200 outline-none"
             />
             {errors.name && (
               <p className="text-red-500 text-xs mt-1">{errors.name.message}</p>
@@ -143,7 +143,7 @@ export default function EditCategoryPage() {
 
           <Button
             type="submit"
-            className="w-full bg-PrimaryColor text-white py-2 mt-4"
+            className="w-full text-white py-2 mt-4"
             disabled={isSubmitting}
           >
             {isSubmitting ? "Updating..." : "Update Category"}

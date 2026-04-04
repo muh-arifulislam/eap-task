@@ -11,6 +11,11 @@ const orderItemSchema = new Schema<IOrderItem>({
 
 const orderSchema = new Schema<IOrder>(
   {
+    orderId: {
+      type: String,
+      required: true,
+      unique: true,
+    },
     customer: {
       name: {
         type: String,

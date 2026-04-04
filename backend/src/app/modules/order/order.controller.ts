@@ -4,8 +4,7 @@ import httpStatus from "http-status";
 import { OrderServices } from "./order.service";
 
 const createOrder = catchAsync(async (req, res) => {
-  const orderData = req.body;
-  const data = await OrderServices.createOrder(orderData);
+  const data = await OrderServices.createOrder(req);
   sendResponse(res, {
     success: true,
     statusCode: httpStatus.OK,

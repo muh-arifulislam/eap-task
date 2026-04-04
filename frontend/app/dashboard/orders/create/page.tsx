@@ -7,7 +7,6 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Cookies from "js-cookie";
 import { toast } from "sonner";
-import Image from "next/image";
 
 import {
   Select,
@@ -19,6 +18,8 @@ import {
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { useCreateOrder } from "@/hooks/userOrder";
+import { useRouter } from "next/navigation";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -51,6 +52,10 @@ export default function CreateOrderPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [totalPrice, setTotalPrice] = useState(0);
 
+  const createOrderMutation = useCreateOrder();
+
+  const router = useRouter();
+
   const {
     register,
     control,
@@ -64,9 +69,9 @@ export default function CreateOrderPage() {
     defaultValues: {
       customer: {
         name: "",
-        email: "",
         mobile: "",
         address: "",
+        email: "",
       },
       items: [{ product: "", quantity: 1 }],
     },
@@ -113,39 +118,29 @@ export default function CreateOrderPage() {
 
   const onSubmit = async (data: FormValues) => {
     try {
-      const token = Cookies.get("access_token");
-
       const payload = {
         ...data,
         totalPrice,
       };
 
-      const res = await fetch(`${BASE_URL}/orders`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: token || "",
-        },
-        body: JSON.stringify(payload),
-      });
-
-      const result = await res.json();
-
-      if (!res.ok) throw new Error(result.message);
-
+      await createOrderMutation.mutateAsync(payload);
       toast.success("Order created successfully");
-
       reset();
     } catch (error: any) {
-      toast.error(error.message);
+      toast.error(error?.message);
+    } finally {
+      router.push("/dashboard/orders");
     }
   };
 
   return (
-    <div className="p-6 max-w-4xl">
+    <div className="max-w-4xl">
       <h1 className="text-2xl font-bold mb-6">Create Order</h1>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      <form
+        onSubmit={handleSubmit(onSubmit)}
+        className="space-y-6 p-6 border bg-white shadow-xs rounded-lg"
+      >
         {/* CUSTOMER INFO */}
 
         <div className="grid grid-cols-2 gap-4">

@@ -72,11 +72,22 @@ const getProduct = catchAsync(async (req, res) => {
 });
 
 const getAllProducts = catchAsync(async (req, res) => {
-  const data = await ProductServices.getProducts();
+  const { data, meta } = await ProductServices.getProducts(req.query);
   sendResponse(res, {
     success: true,
     statusCode: httpStatus.OK,
     message: "Products data are fetched successfully",
+    data: data,
+    meta,
+  });
+});
+
+const getSearchProducts = catchAsync(async (req, res) => {
+  const data = await ProductServices.getSearchProducts(req.query);
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: "Search products data are fetched successfully",
     data: data,
   });
 });
@@ -88,4 +99,5 @@ export const ProductControllers = {
   getProduct,
   getAllProducts,
   updateProductInventory,
+  getSearchProducts,
 };

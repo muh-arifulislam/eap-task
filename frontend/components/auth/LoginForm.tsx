@@ -1,6 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
+import { jwtDecode } from "jwt-decode";
+
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
@@ -37,8 +39,18 @@ export default function LoginForm() {
         throw new Error(result.message || "Login failed");
       }
 
+      const decoded: any = jwtDecode(result.data.accessToken);
+      const userRole = decoded.role;
+
       // Set token in cookie (expires in 7 days)
       Cookies.set("access_token", result.data.accessToken, {
+        expires: 7,
+        sameSite: "strict",
+        secure: process.env.NODE_ENV === "production",
+        path: "/",
+      });
+
+      Cookies.set("role", userRole, {
         expires: 7,
         sameSite: "strict",
         secure: process.env.NODE_ENV === "production",
@@ -100,9 +112,9 @@ export default function LoginForm() {
                 className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none transition-all focus:bg-white focus:ring-4 focus:ring-PrimaryColor/10 focus:border-PrimaryColor placeholder:text-slate-400 text-slate-900"
               />
             </div>
-            {errors.email && (
+            {errors?.email && (
               <p className="text-red-500 text-xs mt-1 ml-1 font-medium">
-                {errors.email.message}
+                {errors?.email?.message as string}
               </p>
             )}
           </div>
@@ -132,9 +144,9 @@ export default function LoginForm() {
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
-            {errors.password && (
+            {errors?.password && (
               <p className="text-red-500 text-xs mt-1 ml-1 font-medium">
-                {errors.password.message}
+                {errors?.password?.message as string}
               </p>
             )}
           </div>

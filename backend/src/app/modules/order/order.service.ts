@@ -5,14 +5,18 @@ import { Order } from "./order.model";
 import AppError from "../../errors/AppError";
 import httpStatus from "http-status";
 import { RestockQueue } from "../restock/restock.model";
+import { generateOrderId } from "./order.helper";
+import { Activity } from "../activity/activity.model";
+import { Request } from "express";
+import { User } from "../user/user.model";
 
-const createOrder = async (orderData: any) => {
+const createOrder = async (req: Request) => {
   const session = await startSession();
 
   try {
     session.startTransaction();
 
-    const { customer, items } = orderData;
+    const { customer, items } = req.body;
 
     if (!items || items.length === 0) {
       throw new AppError(httpStatus.BAD_REQUEST, "No items provided");
@@ -90,11 +94,25 @@ const createOrder = async (orderData: any) => {
               ],
               { session },
             );
+
+            await Activity.create(
+              [{ message: `Product “${product.name}” added to Restock Queue` }],
+              { session },
+            );
           } else {
             // update only if new priority is higher
             if (priorityRank[priority] > priorityRank[existingQueue.priority]) {
               existingQueue.priority = priority;
               await existingQueue.save({ session });
+
+              await Activity.create(
+                [
+                  {
+                    message: `Product “${product.name}” now has ${priority} priority in Restock Queue`,
+                  },
+                ],
+                { session },
+              );
             }
           }
         }
@@ -105,13 +123,25 @@ const createOrder = async (orderData: any) => {
       }),
     );
 
+    const orderId = await generateOrderId();
+
     const order = await Order.create(
       [
         {
+          orderId,
           customer,
           items,
           totalPrice,
           status: "PENDING",
+        },
+      ],
+      { session },
+    );
+
+    await Activity.create(
+      [
+        {
+          message: `Order #${orderId} created by ${req.user.name}`,
         },
       ],
       { session },

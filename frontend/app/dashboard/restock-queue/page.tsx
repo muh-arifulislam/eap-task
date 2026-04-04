@@ -93,11 +93,11 @@ export default function RestockQueuePage() {
   };
 
   return (
-    <div className="p-6 bg-slate-50 min-h-screen">
+    <div className="min-h-screen">
       {/* Header */}
 
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-2xl font-bold">Restock Queue</h1>
+        <h1 className="text-2xl font-medium">Restock Queue</h1>
 
         <Button onClick={fetchQueues} className="flex gap-2">
           <RefreshCcw size={16} />

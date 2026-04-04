@@ -6,6 +6,7 @@ export interface IOrderItem {
 }
 
 export interface IOrder {
+  orderId: string;
   customer: {
     name: string;
     email?: string;
