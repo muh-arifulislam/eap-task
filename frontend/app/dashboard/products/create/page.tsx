@@ -19,6 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useCreateProduct } from "@/hooks/useProduct";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL!;
 
@@ -56,6 +57,8 @@ export default function CreateProductPage() {
     resolver: zodResolver(productSchema),
   });
 
+  const createProductMutation = useCreateProduct();
+
   const imageValue = watch("image");
 
   useEffect(() => {
@@ -86,19 +89,7 @@ export default function CreateProductPage() {
   const onSubmit = async (data: ProductFormValues) => {
     setLoading(true);
     try {
-      const token = Cookies.get("access_token");
-      const res = await fetch(`${BASE_URL}/products`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `${token}`,
-        },
-        body: JSON.stringify(data),
-      });
-      const result = await res.json();
-      if (!res.ok)
-        throw new Error(result.message || "Failed to create product");
-
+      await createProductMutation.mutateAsync(data);
       toast.success("Product created successfully!");
       router.push("/dashboard/products");
     } catch (error: any) {

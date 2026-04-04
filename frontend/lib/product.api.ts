@@ -1,4 +1,4 @@
-import { Product } from "@/types";
+import { CreateProductPayload, Product } from "@/types";
 import Cookies from "js-cookie";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL!;
@@ -40,4 +40,19 @@ export const getSearchProducts = async (
   const data = await res.json();
 
   return data?.data || [];
+};
+
+export const createProduct = async (payload: CreateProductPayload) => {
+  const token = Cookies.get("access_token");
+
+  const res = await fetch(`${BASE_URL}/products`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `${token}`,
+    },
+    body: JSON.stringify(payload),
+  });
+
+  return res.json();
 };
