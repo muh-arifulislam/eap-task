@@ -123,8 +123,8 @@ export default function CreateOrderPage() {
         totalPrice,
       };
 
-      await createOrderMutation.mutateAsync(payload);
-      toast.success("Order created successfully");
+      const res = await createOrderMutation.mutateAsync(payload);
+      toast.success(res?.message ?? "Order created successfully");
       reset();
     } catch (error: any) {
       toast.error(error?.message);
@@ -180,11 +180,19 @@ export default function CreateOrderPage() {
                   </SelectTrigger>
 
                   <SelectContent>
-                    {products.map((product) => (
-                      <SelectItem key={product._id} value={product._id}>
-                        {product.name}
-                      </SelectItem>
-                    ))}
+                    {products
+                      .filter(
+                        (product) =>
+                          !watchItems.some(
+                            (item, i) =>
+                              item.product === product._id && i !== index,
+                          ),
+                      )
+                      .map((product) => (
+                        <SelectItem key={product._id} value={product._id}>
+                          {product.name}
+                        </SelectItem>
+                      ))}
                   </SelectContent>
                 </Select>
 

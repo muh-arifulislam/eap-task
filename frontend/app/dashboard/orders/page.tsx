@@ -238,7 +238,7 @@ export default function OrdersPage() {
             </thead>
 
             <tbody>
-              {orders.length === 0 &&
+              {orders.length &&
                 orders.map((order) => (
                   <tr key={order._id} className="border-b">
                     <td className="p-3">#{order.orderId}</td>
