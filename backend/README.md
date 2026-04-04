@@ -116,9 +116,9 @@ Tracks:
 NODE_ENV=development
 PORT=5000
 
-DATABASE_URL=mongodb+srv://admin:username123@cluster0.reagpra.mongodb.net/?appName=Cluster0
+DATABASE_URL=date_base_url
 
-BCRYPT_SALT_ROUNDS=10
+BCRYPT_SALT_ROUNDS=salt_round
 ```
 
 ---
