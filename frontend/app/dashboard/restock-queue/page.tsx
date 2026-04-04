@@ -106,7 +106,7 @@ export default function RestockQueuePage() {
       </div>
 
       {loading ? (
-        <p>Loading restock queue...</p>
+        <QueueSkeleton />
       ) : queues.length === 0 ? (
         <div className="text-center py-24 text-gray-500">
           No restock alerts 🎉
@@ -193,3 +193,50 @@ export default function RestockQueuePage() {
     </div>
   );
 }
+
+import React from "react";
+
+const QueueSkeleton = () => {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {Array.from({ length: 6 }).map((_, idx) => (
+        <div
+          key={idx}
+          className="bg-white rounded-xl border p-6 shadow-sm animate-pulse"
+        >
+          {/* Priority Badge */}
+          <div className="h-4 w-24 rounded-full bg-gray-200 mb-4"></div>
+
+          {/* Product Info */}
+          <div className="flex gap-4 items-center">
+            <div>
+              <div className="h-5 w-32 bg-gray-200 rounded mb-2"></div>
+              <div className="h-3 w-20 bg-gray-200 rounded"></div>
+            </div>
+          </div>
+
+          {/* Stock Section */}
+          <div className="mt-5 space-y-2 text-sm">
+            <div className="flex justify-between">
+              <span className="h-3 w-24 bg-gray-200 rounded"></span>
+              <span className="h-3 w-8 bg-gray-200 rounded"></span>
+            </div>
+            <div className="flex justify-between">
+              <span className="h-3 w-24 bg-gray-200 rounded"></span>
+              <span className="h-3 w-8 bg-gray-200 rounded"></span>
+            </div>
+          </div>
+
+          {/* Warning */}
+          <div className="flex items-center gap-2 mt-5">
+            <div className="h-4 w-4 bg-gray-200 rounded-full"></div>
+            <div className="h-4 w-32 bg-gray-200 rounded"></div>
+          </div>
+
+          {/* Restock Button */}
+          <div className="mt-5 h-10 w-full bg-gray-200 rounded-full"></div>
+        </div>
+      ))}
+    </div>
+  );
+};

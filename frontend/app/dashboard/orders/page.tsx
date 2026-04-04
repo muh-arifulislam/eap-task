@@ -24,8 +24,12 @@ import { RefreshCcw, Trash2 } from "lucide-react";
 import {
   useDeleteOrder,
   useOrders,
+  useSearchOrders,
   useUpdateOrderStatus,
 } from "@/hooks/userOrder";
+import LoadingSkeleton from "@/components/LoadingSkeleton";
+import SearchWithSuggestion from "@/components/SearchWithSuggestion";
+import { useSearchProducts } from "@/hooks/useProduct";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL!;
 
@@ -62,32 +66,23 @@ const statusTransitions: Record<string, string[]> = {
 export default function OrdersPage() {
   const [queryParams, setQueryParams] = useState("");
 
-  const {
-    data: orders = [],
-    isLoading,
-    error,
-    refetch,
-    isFetching,
-  } = useOrders(queryParams);
+  const { data, isLoading, error, refetch, isFetching } =
+    useOrders(queryParams);
+
+  const orders = data?.data || [];
+  const meta = data?.meta;
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
 
   const updateOrderStatusMutation = useUpdateOrderStatus();
   const deleteOrderMutation = useDeleteOrder();
 
   const [loading, setLoading] = useState(false);
 
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 5;
-
-  const [filterStatus, setFilterStatus] = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
-
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
-
-  useEffect(() => {
-    refetch();
-  }, [filterStatus, startDate, endDate]);
 
   const handleDelete = async (id: string) => {
     const toastId = toast.loading("Order is deleting...");
@@ -109,12 +104,39 @@ export default function OrdersPage() {
     }
   };
 
-  const totalPages = Math.ceil(orders.length / itemsPerPage);
+  const [filterOrderId, setFilterOderId] = useState<null | string>(null);
+  const [filterStatus, setFilterStatus] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
 
-  const currentItems = orders.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage,
-  );
+  useEffect(() => {
+    const params = new URLSearchParams();
+    params.append("page", currentPage.toString());
+    params.append("limit", itemsPerPage.toString());
+
+    if (filterStatus) {
+      params.append("status", filterStatus);
+    }
+
+    if (startDate) {
+      params.append("startDate", startDate);
+    }
+    if (endDate) {
+      params.append("endDate", endDate);
+    }
+    if (filterOrderId) {
+      params.append("orderId", filterOrderId);
+    }
+
+    setQueryParams(params.toString());
+  }, [currentPage, filterStatus, startDate, endDate, filterOrderId]);
+
+  const handleReset = () => {
+    setFilterStatus("");
+    setStartDate("");
+    setEndDate("");
+    setFilterOderId(null);
+  };
 
   return (
     <div className="min-h-screen">
@@ -131,8 +153,15 @@ export default function OrdersPage() {
       </div>
 
       {/* Filters */}
-
       <div className="flex gap-4 mb-6 flex-wrap items-end bg-white p-6 rounded-lg shadow-xs border">
+        <SearchWithSuggestion
+          placeholder="Search Orders..."
+          searchFn={useSearchOrders}
+          labelKey="orderId"
+          idKey="orderId"
+          onSelect={(order) => setFilterOderId(order.orderId)}
+        />
+
         <div className="flex flex-col">
           <label className="text-sm mb-1">Status</label>
 
@@ -176,18 +205,28 @@ export default function OrdersPage() {
           />
         </div>
 
-        <Button onClick={() => refetch()} disabled={isLoading || isFetching}>
-          Filter
-        </Button>
+        <div className="space-x-4">
+          <Button
+            variant={
+              filterOrderId || filterStatus || startDate || endDate
+                ? "destructive"
+                : "secondary"
+            }
+            onClick={handleReset}
+          >
+            Reset
+          </Button>
+        </div>
       </div>
 
       {loading || isFetching ? (
-        <p>Loading orders...</p>
+        <LoadingSkeleton />
       ) : (
         <div className="bg-white rounded-xl border shadow-xs p-4 overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-slate-100">
+                <th className="p-3 text-left">Order ID</th>
                 <th className="p-3 text-left">Customer</th>
                 <th className="p-3 text-left">Mobile</th>
                 <th className="p-3 text-left">Address</th>
@@ -199,95 +238,109 @@ export default function OrdersPage() {
             </thead>
 
             <tbody>
-              {currentItems.map((order) => (
-                <tr key={order._id} className="border-b">
-                  <td className="p-3">{order.customer.name}</td>
+              {orders.length &&
+                orders.map((order) => (
+                  <tr key={order._id} className="border-b">
+                    <td className="p-3">#{order.orderId}</td>
+                    <td className="p-3">{order.customer.name}</td>
 
-                  <td className="p-3">{order.customer.mobile}</td>
+                    <td className="p-3">{order.customer.mobile}</td>
 
-                  <td className="p-3">{order.customer.address}</td>
+                    <td className="p-3">{order.customer.address}</td>
 
-                  <td className="p-3">
-                    {order.items.map((item, i) => (
-                      <div key={i}>
-                        {item.product?.name} × {item.quantity}
-                      </div>
-                    ))}
-                  </td>
+                    <td className="p-3">
+                      {order.items.map((item, i) => (
+                        <div key={i}>
+                          {item.product?.name} × {item.quantity}
+                        </div>
+                      ))}
+                    </td>
 
-                  <td className="p-3">${order.totalPrice}</td>
+                    <td className="p-3">${order.totalPrice}</td>
 
-                  <td className="p-3">
-                    <Select
-                      disabled={statusTransitions[order.status].length === 0}
-                      value={order.status}
-                      onValueChange={(value) =>
-                        handleStatusChange(order._id, value)
-                      }
-                    >
-                      <SelectTrigger className="w-[160px]">
-                        <SelectValue />
-                      </SelectTrigger>
+                    <td className="p-3">
+                      <Select
+                        disabled={statusTransitions[order.status].length === 0}
+                        value={order.status}
+                        onValueChange={(value) =>
+                          handleStatusChange(order._id, value)
+                        }
+                      >
+                        <SelectTrigger className="w-[160px]">
+                          <SelectValue />
+                        </SelectTrigger>
 
-                      <SelectContent>
-                        <SelectItem value={order.status}>
-                          {order.status}
-                        </SelectItem>
-
-                        {statusTransitions[order.status].map((status) => (
-                          <SelectItem key={status} value={status}>
-                            {status}
+                        <SelectContent>
+                          <SelectItem value={order.status}>
+                            {order.status}
                           </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </td>
 
-                  <td className="p-3">
-                    <Button
-                      disabled={order.status === "DELIVERED"}
-                      className="bg-red-500 hover:bg-red-600 text-white"
-                      onClick={() => {
-                        setDeleteId(order._id);
-                        setModalOpen(true);
-                      }}
-                    >
-                      <Trash2 size={16} />
-                    </Button>
+                          {statusTransitions[order.status].map((status) => (
+                            <SelectItem key={status} value={status}>
+                              {status}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </td>
+
+                    <td className="p-3">
+                      <Button
+                        disabled={order.status === "DELIVERED"}
+                        className="bg-red-500 hover:bg-red-600 text-white"
+                        onClick={() => {
+                          setDeleteId(order._id);
+                          setModalOpen(true);
+                        }}
+                      >
+                        <Trash2 size={16} />
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              {orders.length === 0 && (
+                <tr>
+                  <td colSpan={8} className="p-3 text-center text-slate-500">
+                    No orders found
                   </td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
 
-          {/* Pagination */}
-
-          <div className="flex justify-end gap-2 p-4">
-            <Button
+          {/* Pagination Controls */}
+          <div className="flex justify-end mt-4 gap-2 flex-wrap items-center">
+            <button
               disabled={currentPage === 1}
-              onClick={() => setCurrentPage((p) => p - 1)}
+              onClick={() => setCurrentPage((prev) => prev - 1)}
+              className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
             >
               Prev
-            </Button>
+            </button>
 
-            {[...Array(totalPages)].map((_, i) => (
-              <Button
-                key={i}
-                onClick={() => setCurrentPage(i + 1)}
-                className={
-                  currentPage === i + 1 ? "bg-blue-600 text-white" : ""
-                }
-              >
-                {i + 1}
-              </Button>
-            ))}
+            <div className="text-sm text-gray-700">
+              <span>
+                Page {meta?.page} of {meta?.totalPage}
+              </span>
+            </div>
 
-            <Button
-              disabled={currentPage === totalPages}
-              onClick={() => setCurrentPage((p) => p + 1)}
+            <button
+              disabled={currentPage === meta?.totalPage}
+              onClick={() => setCurrentPage((prev) => prev + 1)}
+              className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
             >
               Next
-            </Button>
+            </button>
+            {/* Go to First Page */}
+            {currentPage !== 1 && (
+              <button
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage(1)}
+                className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
+              >
+                First
+              </button>
+            )}
           </div>
         </div>
       )}

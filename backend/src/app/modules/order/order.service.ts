@@ -1,6 +1,6 @@
 import { startSession } from "mongoose";
 import { Product } from "../product/product.model";
-import { IOrder, IOrderItem } from "./order.interface";
+import { GetOrdersQuery, IOrder, IOrderItem } from "./order.interface";
 import { Order } from "./order.model";
 import AppError from "../../errors/AppError";
 import httpStatus from "http-status";
@@ -9,6 +9,7 @@ import { generateOrderId } from "./order.helper";
 import { Activity } from "../activity/activity.model";
 import { Request } from "express";
 import { User } from "../user/user.model";
+import { buildQueryFilter } from "../../utils/buildQueryFilter";
 
 const createOrder = async (req: Request) => {
   const session = await startSession();
@@ -363,10 +364,70 @@ const getOrderById = async (orderId: string) => {
   return order;
 };
 
-const getAllOrders = async () => {
-  const orders = await Order.find()
+const getAllOrders = async (query: GetOrdersQuery) => {
+  const { page = 1, limit = 10, orderId, status, startDate, endDate } = query;
+  const skip = (page - 1) * limit;
+
+  let filter: Record<string, any> = {};
+
+  // status filter
+  if (status) {
+    filter.status = status;
+  }
+
+  // date filter
+  if (startDate || endDate) {
+    filter.createdAt = {};
+
+    if (startDate) {
+      filter.createdAt.$gte = new Date(startDate);
+    }
+
+    if (endDate) {
+      filter.createdAt.$lte = new Date(endDate);
+    }
+  }
+
+  // orderId search
+  if (orderId) {
+    filter = {};
+    filter.orderId = orderId;
+  }
+
+  const orders = await Order.find(filter)
+    .populate("items.product")
     .sort({ createdAt: -1 })
-    .populate("items.product");
+    .skip(skip)
+    .limit(limit);
+
+  const total = await Order.countDocuments(filter);
+
+  return {
+    meta: {
+      page,
+      limit,
+      total,
+      totalPage: Math.ceil(total / limit),
+    },
+    data: orders,
+  };
+};
+
+const getSearchOrders = async (query: Record<string, unknown>) => {
+  const searchableFields = [
+    "customer.name",
+    "customer.email",
+    "customer.mobile",
+    "orderId",
+  ];
+
+  const filter = buildQueryFilter(query, searchableFields);
+
+  const orders = await Order.find(filter)
+    .select("orderId customer.name customer.email")
+    .limit(10)
+    .sort({ createdAt: 1 });
+
   return orders;
 };
 
@@ -376,4 +437,5 @@ export const OrderServices = {
   deleteOrder,
   getOrderById,
   getAllOrders,
+  getSearchOrders,
 };

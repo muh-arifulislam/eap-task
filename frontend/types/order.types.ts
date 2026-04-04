@@ -5,6 +5,7 @@ export interface OrderItem {
 
 export interface Order {
   _id: string;
+  orderId: string;
   customer: {
     name: string;
     email: string | null;

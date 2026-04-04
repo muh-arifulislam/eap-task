@@ -107,7 +107,7 @@ export default function EditCategoryPage() {
       <h2 className="text-2xl font-medium mb-6">Edit Category</h2>
 
       {loading ? (
-        <p>Loading...</p>
+        <LoadingSkeleton />
       ) : (
         <form
           onSubmit={handleSubmit(onSubmit)}
@@ -153,3 +153,24 @@ export default function EditCategoryPage() {
     </div>
   );
 }
+
+const LoadingSkeleton = () => {
+  return (
+    <div className="bg-white p-6 rounded-2xl shadow-xs border border-slate-200 max-w-xl space-y-4 animate-pulse">
+      {/* Name */}
+      <div className="space-y-1">
+        <div className="h-4 w-32 bg-gray-200 rounded"></div>
+        <div className="h-10 w-full bg-gray-100 rounded border border-gray-200"></div>
+      </div>
+
+      {/* isActive */}
+      <div className="flex items-center justify-between">
+        <div className="h-4 w-16 bg-gray-200 rounded"></div>
+        <div className="h-6 w-12 bg-gray-100 rounded-full border border-gray-200"></div>
+      </div>
+
+      {/* Button */}
+      <div className="h-10 w-full bg-gray-300 rounded mt-4"></div>
+    </div>
+  );
+};

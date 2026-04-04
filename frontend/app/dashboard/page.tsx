@@ -1,12 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
+import DashboardSkeleton from "@/components/skeleton/DashboardSkeleton";
 import { useDashboard } from "@/hooks/useDashboard";
 
 export default function DashboardPage() {
   const { data, isLoading } = useDashboard();
 
-  if (isLoading) return <p>Loading dashboard...</p>;
+  if (isLoading) return <DashboardSkeleton />;
 
   return (
     <div className="space-y-6">
@@ -57,23 +58,20 @@ export default function DashboardPage() {
             >
               <div>
                 <p className="font-medium">{product.name}</p>
-
                 <p className="text-sm text-gray-500">
                   {product.stock} available
                 </p>
               </div>
 
-              <div className="flex items-center gap-2">
-                <span
-                  className={`text-xs px-2 py-1 rounded ${
-                    product.status === "Low Stock"
-                      ? "bg-red-100 text-red-600"
-                      : "bg-green-100 text-green-600"
-                  }`}
-                >
-                  {product.status}
-                </span>
-              </div>
+              <span
+                className={`text-xs px-2 py-1 rounded ${
+                  product.status === "Low Stock"
+                    ? "bg-red-100 text-red-600"
+                    : "bg-green-100 text-green-600"
+                }`}
+              >
+                {product.status}
+              </span>
             </div>
           ))}
         </div>

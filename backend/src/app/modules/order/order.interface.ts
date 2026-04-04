@@ -5,6 +5,13 @@ export interface IOrderItem {
   quantity: number;
 }
 
+export type TOrderStatus =
+  | "PENDING"
+  | "CONFIRMED"
+  | "SHIPPED"
+  | "DELIVERED"
+  | "CANCELLED";
+
 export interface IOrder {
   orderId: string;
   customer: {
@@ -17,4 +24,13 @@ export interface IOrder {
   items: IOrderItem[];
   totalPrice: number;
   status: "PENDING" | "CONFIRMED" | "SHIPPED" | "DELIVERED" | "CANCELLED";
+}
+
+export interface GetOrdersQuery {
+  page?: number;
+  limit?: number;
+  orderId?: string;
+  status?: "PENDING" | "CONFIRMED" | "SHIPPED" | "DELIVERED" | "CANCELLED";
+  startDate?: string;
+  endDate?: string;
 }

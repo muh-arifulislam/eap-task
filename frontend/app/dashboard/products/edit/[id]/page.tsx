@@ -152,7 +152,7 @@ export default function EditProductPage() {
   return (
     <div className="min-h-screen">
       <h2 className="text-2xl font-medium mb-6">Edit Product</h2>
-      {loading && <p>Loading...</p>}
+      {loading && <LoadingSkeleton />}
       {!loading && (
         <form
           onSubmit={handleSubmit(onSubmit)}
@@ -274,3 +274,56 @@ export default function EditProductPage() {
     </div>
   );
 }
+
+const LoadingSkeleton = () => {
+  return (
+    <div className="space-y-5 bg-white p-6 rounded-xl shadow-xs border border-slate-200 max-w-2xl animate-pulse">
+      {/* Name */}
+      <div className="space-y-1">
+        <div className="h-4 w-24 bg-gray-200 rounded"></div>
+        <div className="h-10 w-full bg-gray-100 rounded border border-gray-200"></div>
+      </div>
+
+      {/* Image URL */}
+      <div className="space-y-1">
+        <div className="h-4 w-28 bg-gray-200 rounded"></div>
+        <div className="h-10 w-full bg-gray-100 rounded border border-gray-200"></div>
+        <div className="h-40 w-full bg-gray-100 rounded border border-gray-200 mt-2"></div>
+      </div>
+
+      {/* Rating */}
+      <div className="space-y-1">
+        <div className="h-4 w-20 bg-gray-200 rounded"></div>
+        <div className="h-10 w-24 bg-gray-100 rounded border border-gray-200"></div>
+      </div>
+
+      {/* Price */}
+      <div className="space-y-1">
+        <div className="h-4 w-24 bg-gray-200 rounded"></div>
+        <div className="h-10 w-32 bg-gray-100 rounded border border-gray-200"></div>
+      </div>
+
+      {/* Stock */}
+      <div className="space-y-1">
+        <div className="h-4 w-20 bg-gray-200 rounded"></div>
+        <div className="h-10 w-32 bg-gray-100 rounded border border-gray-200"></div>
+        <div className="h-4 w-64 bg-gray-100 rounded mt-1"></div>
+      </div>
+
+      {/* Min Stock */}
+      <div className="space-y-1">
+        <div className="h-4 w-24 bg-gray-200 rounded"></div>
+        <div className="h-10 w-32 bg-gray-100 rounded border border-gray-200"></div>
+      </div>
+
+      {/* Category */}
+      <div className="space-y-1">
+        <div className="h-4 w-28 bg-gray-200 rounded"></div>
+        <div className="h-10 w-full bg-gray-100 rounded border border-gray-200"></div>
+      </div>
+
+      {/* Button */}
+      <div className="h-10 w-36 bg-gray-300 rounded mt-4"></div>
+    </div>
+  );
+};

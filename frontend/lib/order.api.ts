@@ -3,7 +3,12 @@ import Cookies from "js-cookie";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL!;
 
-export const getOrders = async (query: string): Promise<Order[]> => {
+type GetOrdersResponse = {
+  data: Order[];
+  meta: { page: number; limit: number; total: number; totalPage: number };
+};
+
+export const getOrders = async (query: string): Promise<GetOrdersResponse> => {
   const token = Cookies.get("access_token");
 
   const res = await fetch(`${BASE_URL}/orders?${query}`, {
@@ -15,7 +20,7 @@ export const getOrders = async (query: string): Promise<Order[]> => {
 
   const data = await res.json();
 
-  return data?.data || [];
+  return data;
 };
 
 export const createOrder = async (payload: CreateOrderPayload) => {
@@ -68,4 +73,29 @@ export const deleteOrder = async (id: string) => {
   }
 
   return data;
+};
+
+export const getSearchOrders = async (
+  query: string,
+): Promise<
+  {
+    orderId: string;
+    customer: {
+      name: string;
+      email: string;
+    };
+  }[]
+> => {
+  const token = Cookies.get("access_token");
+
+  const res = await fetch(`${BASE_URL}/orders/search?${query}`, {
+    headers: {
+      Authorization: `${token}`,
+    },
+    cache: "no-store",
+  });
+
+  const data = await res.json();
+
+  return data?.data || [];
 };

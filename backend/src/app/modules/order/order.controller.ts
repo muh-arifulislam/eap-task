@@ -2,6 +2,7 @@ import catchAsync from "../../utils/catchAsync";
 import sendResponse from "../../utils/sendResponse";
 import httpStatus from "http-status";
 import { OrderServices } from "./order.service";
+import { parseQueryParams } from "./order.utils";
 
 const createOrder = catchAsync(async (req, res) => {
   const data = await OrderServices.createOrder(req);
@@ -51,11 +52,25 @@ const getOrder = catchAsync(async (req, res) => {
 });
 
 const getAllOrders = catchAsync(async (req, res) => {
-  const data = await OrderServices.getAllOrders();
+  const { data, meta } = await OrderServices.getAllOrders(
+    parseQueryParams(req.query),
+  );
+
   sendResponse(res, {
     success: true,
     statusCode: httpStatus.OK,
     message: "Orders data are fetched successfully",
+    data,
+    meta,
+  });
+});
+
+const getSearchOrders = catchAsync(async (req, res) => {
+  const data = await OrderServices.getSearchOrders(req.query);
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: "Search orders data are fetched successfully",
     data: data,
   });
 });
@@ -66,4 +81,5 @@ export const OrderControllers = {
   deleteOrder,
   getOrder,
   getAllOrders,
+  getSearchOrders,
 };

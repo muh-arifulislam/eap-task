@@ -6,6 +6,7 @@ import {
   createOrder,
   deleteOrder,
   getOrders,
+  getSearchOrders,
   updateOrderStatus,
 } from "@/lib/order.api";
 
@@ -46,5 +47,12 @@ export const useDeleteOrder = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["orders"] });
     },
+  });
+};
+
+export const useSearchOrders = (query: string) => {
+  return useQuery({
+    queryKey: ["search-orders", query],
+    queryFn: () => getSearchOrders(query),
   });
 };

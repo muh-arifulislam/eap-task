@@ -5,6 +5,8 @@ import { USER_ROLE } from "../user/user.constant";
 
 const router = Router();
 
+router.get("/search", OrderControllers.getSearchOrders);
+
 router.get("/:orderId", OrderControllers.getOrder);
 
 router.patch("/:orderId", OrderControllers.updateOrderStatus);
