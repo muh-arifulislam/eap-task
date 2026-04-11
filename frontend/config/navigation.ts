@@ -107,6 +107,13 @@ export const navConfig: NavGroup[] = [
           },
         ],
       },
+      {
+        titleKey: "cv_generator",
+        title: "Generate CV",
+        icon: Boxes,
+        url: "/dashboard/cv-generator",
+        roles: ["admin", "manager"],
+      },
     ],
   },
   {
